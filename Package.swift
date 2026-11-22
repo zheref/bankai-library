@@ -13,6 +13,7 @@ let strictConcurrencySettings: [SwiftSetting] = [
     .enableExperimentalFeature("StrictConcurrency", .when(platforms: []))
 ]
 
+// Platforms are the higher floor of the two seeds; SwiftPM applies them package-wide.
 let package = Package(
     name: "BankaiLibrary",
     platforms: [.macOS(.v10_15), .iOS(.v15), .tvOS(.v15), .watchOS(.v6), .macCatalyst(.v15)],

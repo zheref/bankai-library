@@ -27,6 +27,11 @@ targets: [
 In Xcode, use **File › Add Package Dependencies…** with
 `https://github.com/zheref/bankai-library` and an **Up to Next Major** rule.
 
+**Migrating from the standalone packages:** first remove the old `zheref/BankaiCore` and
+`zheref/BankaiApple` package references. If they stay alongside, the project gets two
+`BankaiCore` modules and fails to resolve. Then link both products from
+`bankai-library`; the `import` lines don't change.
+
 Minimums: iOS 15, macOS 10.15, tvOS 15, watchOS 6, Mac Catalyst 15. Swift tools 6.0.
 
 ## Versioning and release

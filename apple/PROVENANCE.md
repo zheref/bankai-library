@@ -19,9 +19,11 @@ two: they add the `FeatureFlags.swift` doc comments, and `BankaiApple` depends o
   manifest is the repository-root `Package.swift`, because SwiftPM resolves a package at
   its repository's root. The old remote `BankaiCore` dependency on `branch: "main"` became
   an in-package target dependency.
-- Platforms are the union floor of the two seeds: `BankaiCore` moves from iOS 13 to iOS 15
-  (with tvOS and Mac Catalyst 15) to match `BankaiApple`. macOS stays at 10.15 and watchOS
-  at 6.
+- Platforms take the **higher** floor of the two seeds, because SwiftPM's `platforms`
+  apply to the whole package. That means `BankaiCore` moves from iOS 13 to iOS 15 (with
+  tvOS and Mac Catalyst 15) to match `BankaiApple`, and a BankaiCore-only consumer
+  inherits the higher floor. macOS stays at 10.15 and watchOS at 6. The maintained
+  consumer, KroApple, deploys to iOS 17.0+ and macOS 12.4+, so it's unaffected.
 - Swift settings are unchanged: Swift 5 language mode with the `StrictConcurrency`
   experimental flag, as in both seeds.
 
