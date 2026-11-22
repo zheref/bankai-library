@@ -8,7 +8,10 @@ Two pure-JVM Kotlin artifacts, released together under one version:
 | `io.zheref.bankai.udf:BankaiUDF` | Unidirectional data flow: a Redux-style `Store` (`createStore`, `createSameThreadEnforcedStore`, typed variants), `applyMiddleware`, `combineReducers`, thunks, and `createFlow` over coroutines. Depends on `BankaiCore`. |
 
 Both target JDK 17 bytecode (class-file version 61), so Android modules on
-`JavaVersion.VERSION_17` can consume them.
+`JavaVersion.VERSION_17` can consume them. They're compiled with Kotlin 2.3.20, so
+consumers need **Kotlin 2.2 or newer** to read their metadata. `kotlinx-datetime`
+(BankaiCore) and `kotlinx-coroutines-core` (BankaiUDF) appear in public signatures, so
+they're published as `compile`-scope (`api`) dependencies.
 
 ## Install
 
@@ -47,7 +50,9 @@ first tag:
   token to resolve from it, even for a public repository.
 - **Maven Central**: anonymous resolution for every consumer. It needs the `io.zheref`
   namespace verified on Sonatype Central and a signing key, and it would add the
-  signing/Central publishing plugin.
+  signing/Central publishing plugin. The POM description and the sources and javadoc
+  jars Central requires are already produced. The javadoc jar is empty until Dokka is
+  added.
 
 Nothing is published until the maintainer says go.
 

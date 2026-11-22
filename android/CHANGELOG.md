@@ -15,3 +15,5 @@ All notable changes to `io.zheref.bankai.core:BankaiCore` and
 
 - `BankaiUDF` now declares `BankaiCore` as a runtime dependency (it was `compileOnly` in
   the seed).
+- `kotlinx-datetime` (BankaiCore) and `kotlinx-coroutines-core` (BankaiUDF) are now `api`
+  (POM `compile` scope), because their types are part of the public API.

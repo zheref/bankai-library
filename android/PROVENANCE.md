@@ -35,7 +35,15 @@ package's scope and stay in zheref/Bankai.
 - Unchanged: Kotlin 2.3.20, `jvmToolchain(17)`, kotlinx-datetime 0.7.1,
   kotlinx-coroutines 1.6.4, and the `-opt-in=kotlin.time.ExperimentalTime` flag on
   BankaiCore.
-- Added `maven-publish` with sources jars and POM metadata (MIT, SCM).
+- **Public-API dependencies are `api`.** The seed had them `implementation`:
+  `kotlinx-datetime` in BankaiCore and `kotlinx-coroutines-core` in BankaiUDF. Their
+  types appear in public signatures (`asLocalTime(): LocalTime`, `createFlow(…): Flow<T>`),
+  so as `runtime`-scope POM dependencies a consumer couldn't compile calls to them. The
+  `includeBuild` setup had hidden that.
+- Added `maven-publish` with sources and javadoc jars and POM metadata (description,
+  MIT, SCM).
+- Inherited and left as-is: each module's `Main.kt` keeps its public `main()`, and
+  `ConvenienceTests` keeps a JUnit 4 `@get:Rule` that has no effect under JUnit Jupiter.
 
 ## Not seeded
 

@@ -12,6 +12,7 @@ subprojects {
     }
 
     apply(plugin = "org.jetbrains.kotlin.jvm")
+    apply(plugin = "java-library") // the `api` configuration
     apply(plugin = "maven-publish")
 
     extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
@@ -21,6 +22,7 @@ subprojects {
 
     extensions.configure<JavaPluginExtension> {
         withSourcesJar()
+        withJavadocJar() // Maven Central requires one; empty for Kotlin sources until Dokka is added
     }
 
     tasks.withType<Test>().configureEach {
@@ -34,7 +36,8 @@ subprojects {
                 artifactId = project.name
                 pom {
                     name.set(project.name)
-                    description.set(project.description)
+                    // Lazy: each module's script sets `description` after this block runs.
+                    description.set(provider { project.description })
                     url.set("https://github.com/zheref/bankai-library")
                     licenses {
                         license {
