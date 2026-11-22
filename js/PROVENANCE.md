@@ -40,13 +40,31 @@ had a defect, the port fixes it rather than copy it:
   `min`/`sec` (Swift had the plural and singular abbreviations swapped).
 - **`Repository.save(items, attemptPush)` honours `attemptPush`.** The Swift version
   ignored the flag and always pushed.
+- **`Repository.fetch` control flow** (Swift `Repository+Core.swift`):
+  - `filter.onlyLocally` now skips the remotes. Swift still pulled them after completing.
+  - A repository with no remotes completes after the local snapshot even when
+    `onlyLocally: false` is passed. Swift's flow never completed in that case.
+  - A failed local retrieve stops the fetch. Swift went on to pull the remotes into a
+    flow that had already failed.
+  - The first failing remote stops the remaining remotes. Swift's loop kept pulling.
+  - The array the local source returns is copied before remotes are merged into it, so
+    a source that hands back its own backing array is never mutated. Swift arrays copy
+    on assignment, so the seed never had this problem; the port must copy explicitly.
 - **`RepositoryFlow`** keeps the `onLocal` / `onRemote` / `onFailure` / `onCompletion`
   + `run()` shape. Combine's `republish()` becomes `snapshots()`, an async iterator.
-  Debug `print` calls weren't carried over, and an exception escaping the body becomes a
-  `RepoSyncError` failure instead of being dropped.
+  Unlike `republish()`'s unbounded buffer, a flow has **one consumer** and runs once:
+  a second `run()` or `snapshots()` throws instead of hanging or replaying. Debug
+  `print` calls weren't carried over. An exception escaping the body becomes a
+  `RepoSyncError` failure instead of being dropped, and a body that returns without
+  completing the flow completes it. An exception thrown by a consumer's handler is
+  re-thrown as uncaught, never reported as a repository failure.
+- **`readable()` bucket edges** use a 30-day month and a 365-day year, so it never
+  reads "0 months" (28–29 days) or "0 years" (360–364 days). The Swift seed did.
 - **`OpStack`** no longer prints to the console.
 - **UDF store:** unsubscribing twice is a no-op (the Kotlin version fell through to
-  `removeAt(-1)`). `combineReducers` keeps BankaiUDF's *sequential* semantics, not
+  `removeAt(-1)`). A reducer that dispatches now throws `Reducers may not dispatch
+  actions.`, as redux.js and ReduxKotlin do. The Kotlin seed had that guard commented
+  out, and the nested dispatch's state was silently lost. `combineReducers` keeps BankaiUDF's *sequential* semantics, not
   redux.js's keyed ones. The JVM-only pieces have no JS counterpart and weren't ported:
   `createSameThreadEnforcedStore`, thread utilities, the coroutine `createFlow`, the
   Combine schedulers and the deprecated aliases.

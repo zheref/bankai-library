@@ -138,6 +138,21 @@ describe("Repository.fetch", () => {
     expect((events[0]?.[1] as TestObject[]).map((item) => item.name)).toEqual(["Fish"]);
   });
 
+  it("completes when onlyLocally is false but there are no remotes", async () => {
+    const events = await collect(new Repository(local(localItems())).fetch({ onlyLocally: false }));
+    expect(events.map(([kind]) => kind)).toEqual(["local", "complete"]);
+  });
+
+  it("never mutates the array the local source returned", async () => {
+    const backing = localItems();
+    const source: LocalDataSource<TestObject, TestFilter> = {
+      store: async () => {},
+      retrieve: async () => backing,
+    };
+    await collect(new Repository(source).addRemote(remote("api", remoteItems())).fetch());
+    expect(backing).toEqual(localItems());
+  });
+
   it("fails with failedRetrieving / failedPulling", async () => {
     const broken: LocalDataSource<TestObject, TestFilter> = {
       store: async () => {},
@@ -251,6 +266,20 @@ describe("RepositoryFlow — ported from RepositoryFlowTests.swift", () => {
     slow.onLocal((n) => events.push(n)).run().cancel();
     await new Promise((resolve) => setTimeout(resolve, 15));
     expect(events).toEqual([]);
+  });
+
+  it("refuses a second consumer instead of hanging", async () => {
+    const flow = new RepositoryFlow<number>(async (receiver) => receiver.sendLocal(1), { onlyLocalExpected: true });
+    await collect(flow);
+    expect(() => flow.run()).toThrow(/already ran/);
+    expect(() => flow.snapshots()).toThrow(/already ran/);
+  });
+
+  it("completes a flow whose body returns without completing it", async () => {
+    const flow = new RepositoryFlow<number>(async (receiver) => {
+      receiver.sendRemote(1, "api", true);
+    });
+    expect(await collect(flow)).toEqual([["remote", { data: 1, label: "api" }], ["complete"]]);
   });
 
   it("turns an exception escaping the body into a failure", async () => {

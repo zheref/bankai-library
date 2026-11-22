@@ -64,7 +64,8 @@ function label(count: number, unit: DurationUnit, abbreviated: boolean): string 
  * A human-readable duration: `readable(600)` → `"10 minutes"`,
  * `readable(Duration.weeks(20))` → `"4 months"`. Without `unit`, the largest unit that
  * fits is chosen: seconds under a minute, minutes under an hour, hours under a day, days
- * under a week, weeks under four weeks, months under twelve months, then years.
+ * under a week, weeks under a month (30 days), months under a year (365 days), then
+ * years — so the count is never 0 months or 0 years.
  */
 export function readable(
   interval: Seconds,
@@ -83,9 +84,9 @@ export function readable(
           ? "hour"
           : interval < WEEK
             ? "day"
-            : interval < 4 * WEEK
+            : interval < MONTH
               ? "week"
-              : interval < 12 * MONTH
+              : interval < YEAR
                 ? "month"
                 : "year";
   return label(convert(interval, unit), unit, abbreviated);

@@ -54,6 +54,17 @@ describe("createStore", () => {
     expect(() => store?.dispatch(() => {})).toThrow(TypeError);
   });
 
+  it("refuses a dispatch from inside a reducer instead of losing state", () => {
+    let store: ReturnType<typeof createStore<number, unknown>> | undefined;
+    store = createStore<number, unknown>((state, action) => {
+      if (action === "outer") store?.dispatch("inner");
+      return action === "inner" ? state + 100 : state + 1;
+    }, 0);
+    const before = store.state;
+    expect(() => store?.dispatch("outer")).toThrow(/Reducers may not dispatch/);
+    expect(store.state).toBe(before);
+  });
+
   it("dispatches REPLACE when the reducer is replaced", () => {
     const store = createStore(counter, { count: 0, log: [] });
     store.replaceReducer(counter);

@@ -16,16 +16,23 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./udf": {
       "types": "./dist/udf/index.d.ts",
-      "import": "./dist/udf/index.js"
+      "import": "./dist/udf/index.js",
+      "default": "./dist/udf/index.js"
     },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "udf": ["./dist/udf/index.d.ts"]
+    }
+  },
   "files": [
     "dist",
     "src",

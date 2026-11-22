@@ -20,7 +20,11 @@ export function randomString(length = 11): string {
   return out;
 }
 
-/** An RFC 4122 v4 UUID, upper-cased like Foundation's `UUID().uuidString`. */
+/**
+ * An RFC 4122 v4 UUID, upper-cased like Foundation's `UUID().uuidString`. Needs Web
+ * Crypto's `randomUUID`: Node 19+, or a browser page served from a secure context
+ * (HTTPS or localhost).
+ */
 export function randomUUID(): string {
   return globalThis.crypto.randomUUID().toUpperCase();
 }

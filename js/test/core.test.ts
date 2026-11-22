@@ -49,6 +49,14 @@ describe("time — ported from StandardExtensionsTests.swift", () => {
     expect(readable(Duration.minutes(5), { abbreviated: true })).toBe("5min");
   });
 
+  it("never reads 0 months or 0 years at the bucket edges", () => {
+    expect(readable(Duration.days(28))).toBe("4 weeks");
+    expect(readable(Duration.days(29))).toBe("4 weeks");
+    expect(readable(Duration.days(30))).toBe("1 month");
+    expect(readable(Duration.days(362))).toBe("12 months");
+    expect(readable(Duration.days(365))).toBe("1 year");
+  });
+
   it("formats clock-style durations", () => {
     expect(digitalDuration(65)).toBe("01:05");
     expect(digitalDuration(Duration.hours(2) + 125)).toBe("02:02");

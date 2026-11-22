@@ -78,7 +78,12 @@ type FlowEvent<T> =
 /**
  * A flow of snapshots over time: a local snapshot, then zero or more remote snapshots,
  * then completion or failure. Nothing runs until `run()` (or iteration with
- * `snapshots()`), and a flow runs at most once.
+ * `snapshots()`). A flow has exactly one consumer and runs at most once: calling
+ * `run()` or `snapshots()` a second time throws; call `fetch()` again for a fresh flow.
+ *
+ * Handlers are called outside the flow's own error handling: an exception thrown by an
+ * `on…` handler is re-thrown asynchronously (reported as uncaught), never mistaken for a
+ * repository failure.
  */
 export class RepositoryFlow<T> implements SnapshotReceiver<T> {
   readonly onlyLocalExpected: boolean;
@@ -128,6 +133,7 @@ export class RepositoryFlow<T> implements SnapshotReceiver<T> {
 
   /** Starts the flow, delivering to the `on…` handlers. */
   run(): FlowSubscription {
+    this.claim();
     this.listeners.push((event) => {
       switch (event.type) {
         case "snapshot":
@@ -150,7 +156,12 @@ export class RepositoryFlow<T> implements SnapshotReceiver<T> {
    * Starts the flow and yields each snapshot. Iteration ends when the flow completes
    * and throws the `RepoSyncError` when it fails. Breaking out cancels the flow.
    */
-  async *snapshots(): AsyncGenerator<RepoSnapshot<T>, void, undefined> {
+  snapshots(): AsyncGenerator<RepoSnapshot<T>, void, undefined> {
+    this.claim();
+    return this.iterate();
+  }
+
+  private async *iterate(): AsyncGenerator<RepoSnapshot<T>, void, undefined> {
     const queue: FlowEvent<T>[] = [];
     let wake: (() => void) | undefined;
     this.listeners.push((event) => {
@@ -201,15 +212,25 @@ export class RepositoryFlow<T> implements SnapshotReceiver<T> {
     this.finish({ type: "failure", error });
   }
 
-  private start(): void {
-    if (this.started) return;
+  private claim(): void {
+    if (this.started) {
+      throw new Error("RepositoryFlow already ran: a flow has one consumer; call fetch() again for a new flow.");
+    }
     this.started = true;
+  }
+
+  private start(): void {
     // Deliver asynchronously so handlers registered right after run() still see
     // every event, as the Combine original does.
     queueMicrotask(() => {
-      this.body(this).catch((error: unknown) => {
-        this.fail(error instanceof RepoSyncError ? error : new RepoSyncError("failedRetrieving", error));
-      });
+      this.body(this).then(
+        // A body that returns without completing the flow completes it here, so a
+        // consumer is never left waiting.
+        () => this.giveUp(),
+        (error: unknown) => {
+          this.fail(error instanceof RepoSyncError ? error : new RepoSyncError("failedRetrieving", error));
+        },
+      );
     });
   }
 
@@ -225,7 +246,17 @@ export class RepositoryFlow<T> implements SnapshotReceiver<T> {
 
   private emit(event: FlowEvent<T>): void {
     if (this.cancelled) return;
-    for (const listener of this.listeners) listener(event);
+    for (const listener of this.listeners) {
+      try {
+        listener(event);
+      } catch (error) {
+        // A consumer's handler threw: surface it as an uncaught error rather than
+        // letting the body's error handling report it as a repository failure.
+        queueMicrotask(() => {
+          throw error;
+        });
+      }
+    }
   }
 }
 
@@ -275,13 +306,14 @@ export class Repository<V extends Traceable, F extends Filter = Filter> {
    * when there are no remotes or `filter.onlyLocally` is set.
    */
   fetch(filter?: F): RepositoryFlow<V[]> {
-    const onlyLocally = filter?.onlyLocally ?? this.remotes.length === 0;
+    const onlyLocally = (filter?.onlyLocally ?? false) || this.remotes.length === 0;
     const remotes = onlyLocally ? [] : [...this.remotes];
     return new RepositoryFlow<V[]>(
       async (receiver) => {
         let snapshot: V[] = [];
         try {
-          snapshot = await this.local.retrieve(filter);
+          // Copy: merging remotes must never mutate the array the local source returned.
+          snapshot = [...(await this.local.retrieve(filter))];
           receiver.sendLocal([...snapshot]);
         } catch (error) {
           receiver.fail(new RepoSyncError("failedRetrieving", error));

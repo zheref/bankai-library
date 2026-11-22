@@ -91,6 +91,11 @@ export function createStore<S, A = Action>(
     if (!isPlainAction(action)) {
       throw new TypeError("Actions must not be functions. Use custom middleware (e.g. a thunk) for async actions.");
     }
+    if (isDispatching) {
+      // The Kotlin seed left this guard commented out, which lets a reducer's nested
+      // dispatch be silently overwritten by the outer reducer's result.
+      throw new Error("Reducers may not dispatch actions.");
+    }
     try {
       isDispatching = true;
       currentState = currentReducer(currentState, action);
