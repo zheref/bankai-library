@@ -1,0 +1,29 @@
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# Swift Package Manager
+.build/
+.swiftpm/
+/Packages/
+*.xcodeproj/xcuserdata/
+
+# Gradle / JVM
+.gradle/
+build/
+out/
+local.properties
+
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Hatsu / Nen local state
+.nen/
+.claude/worktrees/
+Reports/
